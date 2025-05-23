@@ -1,0 +1,10 @@
+services:
+  dashboard:
+    image: dashboard
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn app:app --host 0.0.0.0 --port 9900"]
+    ports:
+      - 9900:9900
+      - 5678:5678
