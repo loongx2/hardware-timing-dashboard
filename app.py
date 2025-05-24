@@ -104,7 +104,9 @@ def analyze_execution_timing(df):
                         message_id = row.get('Message_ID', None)
                     elif not row['Toggled'] and start_time is not None:
                         # Only pair events with the same Message_ID if available
-                        if message_id == row.get('Message_ID', None):
+                        # Handle NaN values properly
+                        row_message_id = row.get('Message_ID', None)
+                        if (pd.isna(message_id) and pd.isna(row_message_id)) or (message_id == row_message_id):
                             # Event ended
                             execution_time = row['Time'] - start_time
                             executions.append({
@@ -778,27 +780,27 @@ def update_upload_status_and_stats(contents, filename):
                 all_event_means[event].append(event_stats['mean_ns'])
         
         # Calculate overall average
-        avg_exec_time = f"{np.mean(all_mean_times)/1000:.1f} μs"
+        avg_exec_time = f"{np.mean(all_mean_times):.1f} ns"
         
         # Find fastest and slowest events
         event_avgs = {event: np.mean(means) for event, means in all_event_means.items()}
         fastest_event = min(event_avgs.keys(), key=lambda x: event_avgs[x])
         slowest_event = max(event_avgs.keys(), key=lambda x: event_avgs[x])
         
-        fastest_time = f"{event_avgs[fastest_event]/1000:.1f} μs"
-        slowest_time = f"{event_avgs[slowest_event]/1000:.1f} μs"
+        fastest_time = f"{event_avgs[fastest_event]:.1f} ns"
+        slowest_time = f"{event_avgs[slowest_event]:.1f} ns"
     else:
         # Original stats calculation when no device info
         total_events = sum(stat['count'] for stat in stats.values())
         avg_times = [stat['mean_ns'] for stat in stats.values()]
-        avg_exec_time = f"{np.mean(avg_times)/1000:.1f} μs"
+        avg_exec_time = f"{np.mean(avg_times):.1f} ns"
         
         # Find fastest and slowest events
         fastest_event = min(stats.keys(), key=lambda x: stats[x]['mean_ns'])
         slowest_event = max(stats.keys(), key=lambda x: stats[x]['mean_ns'])
         
-        fastest_time = f"{stats[fastest_event]['mean_ns']/1000:.1f} μs"
-        slowest_time = f"{stats[slowest_event]['mean_ns']/1000:.1f} μs"
+        fastest_time = f"{stats[fastest_event]['mean_ns']:.1f} ns"
+        slowest_time = f"{stats[slowest_event]['mean_ns']:.1f} ns"
     
     return (
         status_msg,
@@ -845,8 +847,8 @@ def update_execution_time_chart(contents):
         
         # Create comparison chart
         events = list(event_stats.keys())
-        mean_times = [np.mean(event_stats[event]['times'])/1000 for event in events]  # Convert to microseconds
-        std_times = [np.std(event_stats[event]['times'])/1000 for event in events]
+        mean_times = [np.mean(event_stats[event]['times']) for event in events]  # Keep as nanoseconds
+        std_times = [np.std(event_stats[event]['times']) for event in events]
         
         fig.add_trace(go.Bar(
             x=events,
@@ -858,8 +860,8 @@ def update_execution_time_chart(contents):
     else:
         # Original processing when no device info
         events = list(stats.keys())
-        mean_times = [stats[event]['mean_ns']/1000 for event in events]  # Convert to microseconds
-        std_times = [stats[event]['std_ns']/1000 for event in events]
+        mean_times = [stats[event]['mean_ns'] for event in events]  # Keep as nanoseconds
+        std_times = [stats[event]['std_ns'] for event in events]  # Keep as nanoseconds
         
         fig.add_trace(go.Bar(
             x=events,
@@ -872,7 +874,7 @@ def update_execution_time_chart(contents):
     fig.update_layout(
         title='Event Execution Time Comparison',
         xaxis_title='Events',
-        yaxis_title='Execution Time (μs)',
+        yaxis_title='Execution Time (ns)',  # Changed from μs to ns
         height=400,
         template='plotly_white'
     )
@@ -968,7 +970,7 @@ def update_execution_trends(contents):
             # Sort one more time to ensure chronological order after merging from all devices
             sorted_execs = sorted(executions, key=lambda x: x['start'])
             x_values = list(range(len(sorted_execs)))
-            y_values = [ex['time']/1000 for ex in sorted_execs]  # Convert to microseconds
+            y_values = [ex['time'] for ex in sorted_execs]  # Keep in nanoseconds
             
             fig.add_trace(go.Scatter(
                 x=x_values,
@@ -982,7 +984,7 @@ def update_execution_trends(contents):
         for event, data in stats.items():
             executions = [ex['time'] for ex in data['executions']]
             x_values = list(range(len(executions)))
-            y_values = [exec_time/1000 for exec_time in executions]  # Convert to microseconds
+            y_values = executions  # Keep in nanoseconds
             
             fig.add_trace(go.Scatter(
                 x=x_values,
@@ -995,7 +997,7 @@ def update_execution_trends(contents):
     fig.update_layout(
         title='Execution Time Trends Over Time',
         xaxis_title='Execution Instance',
-        yaxis_title='Execution Time (μs)',
+        yaxis_title='Execution Time (ns)',  # Changed from μs to ns
         height=400,
         template='plotly_white'
     )
@@ -1027,26 +1029,26 @@ def update_time_distribution(contents):
     if has_device_info:
         for device, device_stats in stats.items():
             for event, event_data in device_stats.items():
-                times_us = [ex['time']/1000 for ex in event_data['executions']]  # Convert to microseconds
-                all_times.extend(times_us)
-                all_events.extend([event] * len(times_us))
+                times_ns = [ex['time'] for ex in event_data['executions']]  # Keep as nanoseconds
+                all_times.extend(times_ns)
+                all_events.extend([event] * len(times_ns))
     else:
         for event, data in stats.items():
-            times_us = [ex['time']/1000 for ex in data['executions']]  # Convert to microseconds
-            all_times.extend(times_us)
-            all_events.extend([event] * len(times_us))
+            times_ns = [ex['time'] for ex in data['executions']]  # Keep as nanoseconds
+            all_times.extend(times_ns)
+            all_events.extend([event] * len(times_ns))
     
     df_dist = pd.DataFrame({
-        'Execution_Time_us': all_times,
+        'Execution_Time_ns': all_times,
         'Event': all_events
     })
     
     fig = px.histogram(
         df_dist,
-        x='Execution_Time_us',
+        x='Execution_Time_ns',  # Fixed typo from Execution_Time_un
         color='Event',
         title='Execution Time Distribution',
-        labels={'Execution_Time_us': 'Execution Time (μs)', 'count': 'Frequency'},
+        labels={'Execution_Time_ns': 'Execution Time (ns)', 'count': 'Frequency'},
         nbins=30
     )
     
@@ -1085,13 +1087,13 @@ def update_detailed_timing(contents):
     if has_device_info:
         for device, device_stats in stats.items():
             for event, event_data in device_stats.items():
-                times_us = [ex['time']/1000 for ex in event_data['executions']]  # Convert to microseconds
-                all_times.extend(times_us)
-                all_events.extend([event] * len(times_us))
-                all_devices.extend([device] * len(times_us))
+                times_ns = [ex['time'] for ex in event_data['executions']]  # Keep as nanoseconds
+                all_times.extend(times_ns)
+                all_events.extend([event] * len(times_ns))
+                all_devices.extend([device] * len(times_ns))
         
         df_box = pd.DataFrame({
-            'Execution_Time_us': all_times,
+            'Execution_Time_ns': all_times,  # Changed from Execution_Time_us
             'Event': all_events,
             'Device': all_devices
         })
@@ -1099,28 +1101,28 @@ def update_detailed_timing(contents):
         fig = px.box(
             df_box,
             x='Event',
-            y='Execution_Time_us',
+            y='Execution_Time_ns',  # Changed from Execution_Time_us
             color='Device',
             title='Detailed Execution Time Analysis by Device',
-            labels={'Execution_Time_us': 'Execution Time (μs)'}
+            labels={'Execution_Time_ns': 'Execution Time (ns)'}  # Changed from μs to ns
         )
     else:
         for event, data in stats.items():
-            times_us = [ex['time']/1000 for ex in data['executions']]  # Convert to microseconds
-            all_times.extend(times_us)
-            all_events.extend([event] * len(times_us))
+            times_ns = [ex['time'] for ex in data['executions']]  # Keep as nanoseconds
+            all_times.extend(times_ns)
+            all_events.extend([event] * len(times_ns))
         
         df_box = pd.DataFrame({
-            'Execution_Time_us': all_times,
+            'Execution_Time_ns': all_times,  # Changed from Execution_Time_us
             'Event': all_events
         })
         
         fig = px.box(
             df_box,
             x='Event',
-            y='Execution_Time_us',
+            y='Execution_Time_ns',  # Changed from Execution_Time_us
             title='Detailed Execution Time Analysis (Box Plot)',
-            labels={'Execution_Time_us': 'Execution Time (μs)'}
+            labels={'Execution_Time_ns': 'Execution Time (ns)'}  # Changed from μs to ns
         )
     
     fig.update_layout(
@@ -1459,7 +1461,7 @@ def update_synchronicity_analysis(contents):
     fig.update_layout(
         title="Synchronization Time Differences Between Devices",
         xaxis_title="Sync Pulse ID",
-        yaxis_title="Time Difference (μs)",
+        yaxis_title="Time Difference (ns)",  # Changed from μs to ns
         height=400,
         template='plotly_white'
     )
@@ -1482,8 +1484,8 @@ def update_synchronicity_analysis(contents):
         html.H5("Synchronicity Analysis"),
         html.P(f"Number of sync events: {len(sync_stats)}"),
         html.P(f"Devices involved in synchronization: {len(devices_involved)}"),
-        html.P(f"Average sync difference: {overall_avg:.2f} μs"),
-        html.P(f"Maximum sync difference: {overall_max:.2f} μs"),
+        html.P(f"Average sync difference: {overall_avg:.2f} ns"),  # Changed from μs to ns
+        html.P(f"Maximum sync difference: {overall_max:.2f} ns"),  # Changed from μs to ns
         html.Hr(),
         html.P("Lower values indicate better synchronization between devices")
     ]
@@ -1563,13 +1565,13 @@ def update_communication_analysis(contents):
     pair_stats = []
     for _, row in device_pairs.iterrows():
         pair_stats.append(
-            html.P(f"{row['Source']} → {row['Destination']} ({row['Hops']:.0f} hops): {row['Time_us']:.2f} μs")
+            html.P(f"{row['Source']} → {row['Destination']} ({row['Hops']:.0f} hops): {row['Time_us']:.2f} ns")  # Changed from μs to ns
         )
     
     summary = [
         html.H5("Communication Time Analysis"),
         html.P(f"Total messages analyzed: {len(message_ids)}"),
-        html.P(f"Average time per hop: {avg_time_per_hop:.2f} μs"),
+        html.P(f"Average time per hop: {avg_time_per_hop:.2f} ns"),  # Changed from μs to ns
         html.Hr(),
         html.P("Average communication times:"),
         html.Div(pair_stats)
