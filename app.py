@@ -35,8 +35,15 @@ def parse_csv_contents(contents, filename):
     
     try:
         if 'csv' in filename.lower():
-            # Assume that the user uploaded a CSV file
-            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            # Read the CSV file into a string
+            csv_string = decoded.decode('utf-8')
+            
+            # Remove comment lines that start with // or #
+            cleaned_lines = [line for line in csv_string.splitlines() if not line.strip().startswith('//') and not line.strip().startswith('#')]
+            cleaned_csv = '\n'.join(cleaned_lines)
+            
+            # Parse the cleaned CSV content
+            df = pd.read_csv(io.StringIO(cleaned_csv))
             
             # Validate required columns
             required_columns = ['Event', 'Time', 'Toggled']
@@ -419,8 +426,15 @@ def generate_sample_data():
 
 # Load sample data
 # sample_df = generate_sample_data()
-# Load daisy chain sample data
-sample_df = pd.read_csv('data/daisy_chain_truly_fixed.csv')
+
+# Load sample timing data with proper handling of comment lines
+with open('sample_timing_data.csv', 'r') as f:
+    # Skip comment lines that start with // or #
+    cleaned_lines = [line for line in f if not line.strip().startswith('//') and not line.strip().startswith('#')]
+    cleaned_csv = '\n'.join(cleaned_lines)
+
+# Parse the cleaned CSV content
+sample_df = pd.read_csv(io.StringIO(cleaned_csv))
 timing_data = sample_df  # Initialize with sample data
 
 # Define the layout
@@ -701,11 +715,6 @@ app.layout = dbc.Container([
     ])
 ], fluid=True)
 
-if __name__ == '__main__':
-    # Get port from environment variable or use default
-    port = int(os.environ.get('DASH_PORT', 8050))
-    app.run_server(debug=True, host='0.0.0.0', port=port)
-
 @app.callback(
     [Output('upload-status', 'children'),
      Output('total-events', 'children'),
@@ -739,57 +748,6 @@ def update_upload_status_and_stats(contents, filename):
     
     # Check if the DataFrame has device information
     has_device_info = 'Device_ID' in timing_data.columns
-    
-    stats = analyze_execution_timing(timing_data)
-    
-    if not stats:
-        return status_msg, "0", "N/A", "N/A", "N/A"
-    
-    if has_device_info:
-        # Aggregate stats across all devices
-        total_events = 0
-        all_mean_times = []
-        all_event_means = {}
-        
-        for device, device_stats in stats.items():
-            for event, event_stats in device_stats.items():
-                total_events += event_stats['count']
-                all_mean_times.append(event_stats['mean_ns'])
-                
-                if event not in all_event_means:
-                    all_event_means[event] = []
-                all_event_means[event].append(event_stats['mean_ns'])
-        
-        # Calculate overall average
-        avg_exec_time = f"{np.mean(all_mean_times)/1000:.1f} μs"
-        
-        # Find fastest and slowest events
-        event_avgs = {event: np.mean(means) for event, means in all_event_means.items()}
-        fastest_event = min(event_avgs.keys(), key=lambda x: event_avgs[x])
-        slowest_event = max(event_avgs.keys(), key=lambda x: event_avgs[x])
-        
-        fastest_time = f"{event_avgs[fastest_event]/1000:.1f} μs"
-        slowest_time = f"{event_avgs[slowest_event]/1000:.1f} μs"
-    else:
-        # Original stats calculation when no device info
-        total_events = sum(stat['count'] for stat in stats.values())
-        avg_times = [stat['mean_ns'] for stat in stats.values()]
-        avg_exec_time = f"{np.mean(avg_times)/1000:.1f} μs"
-        
-        # Find fastest and slowest events
-        fastest_event = min(stats.keys(), key=lambda x: stats[x]['mean_ns'])
-        slowest_event = max(stats.keys(), key=lambda x: stats[x]['mean_ns'])
-        
-        fastest_time = f"{stats[fastest_event]['mean_ns']/1000:.1f} μs"
-        slowest_time = f"{stats[slowest_event]['mean_ns']/1000:.1f} μs"
-    
-    return (
-        status_msg,
-        f"{total_events:,}",
-        avg_exec_time,
-        f"{fastest_event}: {fastest_time}",
-        f"{slowest_event}: {slowest_time}"
-    )
     
     stats = analyze_execution_timing(timing_data)
     

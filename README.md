@@ -1,6 +1,6 @@
 # Hardware Timing Analytics Dashboard
 
-A Python-based dashboard built with Dash, Plotly, and Seaborn for analyzing embedded system hardware timing data from CSV files.
+A Python-based dashboard built with Dash, Plotly, and Seaborn for analyzing embedded system hardware timing data from CSV files. Special focus on daisy chain configurations and synchronicity between devices.
 
 ## Features
 
@@ -13,6 +13,15 @@ A Python-based dashboard built with Dash, Plotly, and Seaborn for analyzing embe
 - 🔌 **Device Topology Analysis**: Visualize and analyze daisy-chained embedded devices
 - ⏱️ **Synchronicity Analysis**: Measure timing synchronization between multiple devices
 - 🔄 **Communication Time Analysis**: Track message propagation through device chains
+
+## Recent Improvements
+
+- **Enhanced Daisy Chain Visualization**: Improved device topology visualization with correct positioning and connections
+- **Improved Synchronicity Analysis**: Added detailed statistics for synchronization events between devices
+- **Comprehensive Error Handling**: Better error handling for CSV file processing and data visualization
+- **Advanced Visualization Options**: Added standard deviation visualizations and enhanced error bars
+- **Robust Deployment Options**: Multiple ways to deploy including VS Code tasks, Docker, and local Python
+- **Fixed Data Processing**: Enhanced CSV file processing to handle comment lines and formatting issues
 ## CSV Data Format
 
 The dashboard supports two CSV formats:
@@ -36,9 +45,18 @@ The dashboard supports two CSV formats:
 | Position   | Position in the daisy chain (1=first, n=last)        | 1           |
 | Message_ID | Identifier for tracking messages between devices     | MSG_12345   |
 
-### Sample CSV:
+### Comment Lines in CSV:
+The dashboard now supports comment lines in CSV files that start with `//` or `#`.
+
+Example:
 ```csv
-Event,Time,Toggled
+// This is a comment line that will be skipped during processing
+# This is another comment line that will be skipped
+Event,Time,Toggled,Device_ID,Position,Message_ID
+GPIO_Init,1000,True,Device_1,1,
+```
+
+### Sample CSV (Basic):
 GPIO_Init,1000,True
 GPIO_Init,1500,False
 ADC_Read,2000,True
@@ -58,9 +76,47 @@ UART_Receive,25000,True,Device_2,2,MSG_12345
 UART_Receive,25500,False,Device_2,2,MSG_12345
 ```
 
+### Synchronicity Events CSV Format:
+For accurate synchronicity analysis, include Sync_Pulse events with SYNC_* Message_IDs:
+
+```csv
+Event,Time,Toggled,Device_ID,Position,Message_ID
+Sync_Pulse,70000,True,Device_1,1,SYNC_1
+Sync_Pulse,70300,False,Device_1,1,SYNC_1
+Sync_Pulse,70050,True,Device_2,2,SYNC_1
+Sync_Pulse,70350,False,Device_2,2,SYNC_1
+Sync_Pulse,70100,True,Device_3,3,SYNC_1
+Sync_Pulse,70400,False,Device_3,3,SYNC_1
+```
+
+### Data Files
+The dashboard comes with several sample data files:
+- `data/daisy_chain_truly_fixed.csv` - Properly formatted daisy chain data with synchronization events
+- `data/sample_timing_data.csv` - Basic timing data for a single device
+- `data/sample_data.csv` - Additional sample data for testing
+
+**Important**: CSV files can now include comment lines starting with `//` or `#` - these will be automatically filtered during processing.
+
 ## Quick Start
 
-### Option 1: Using Launch Script (Recommended)
+### Option 1: Using VS Code Tasks (Recommended)
+
+1. **Open the project in VS Code:**
+   ```bash
+   code /path/to/dashboard
+   ```
+
+2. **Run the Docker Build and Run task:**
+   - Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
+   - Type "Tasks: Run Task" and select it
+   - Choose "docker-run: debug"
+
+3. **Access the dashboard:**
+   ```
+   http://localhost:8050
+   ```
+
+### Option 2: Using Launch Script
 
 1. **Make the launch script executable:**
    ```bash
@@ -78,13 +134,13 @@ This will automatically:
 - Create sample data
 - Launch the dashboard
 
-### Option 2: Manual Setup with Virtual Environment
+### Option 3: Manual Setup with Virtual Environment
 
 1. **Create and activate virtual environment:**
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On macOS/Linux
-   # venv\Scripts\activate   # On Windows
+   python3 -m venv venv_new
+   source venv_new/bin/activate  # On macOS/Linux
+   # venv_new\Scripts\activate   # On Windows
    ```
 
 2. **Install dependencies:**
@@ -102,7 +158,7 @@ This will automatically:
    http://localhost:8050
    ```
 
-### Option 3: Docker Deployment
+### Option 4: Docker Deployment
 
 1. **Build and run with Docker Compose:**
    ```bash
@@ -168,40 +224,84 @@ The launcher now uses a fixed configuration:
 - Always uses port 8050
 - Always mounts the local data directory to the container
 
-### Stopping the Dashboard
+## Troubleshooting
 
-To stop the dashboard, run:
-```
-docker stop hardware-timing-dashboard
-```
+### Common Issues and Solutions
 
-### Interactive Device Topology
+#### Dashboard Not Loading in Browser
+1. **Check if the application is running**:
+   ```bash
+   docker ps | grep dashboard
+   # or if running locally
+   ps aux | grep app.py
+   ```
 
-The dashboard now includes an interactive device topology visualization where you can:
+2. **Verify port availability**:
+   ```bash
+   lsof -i :8050
+   ```
+   If port 8050 is already in use, modify the port in app.py or use the Docker port mapping.
 
-- Drag and drop device nodes to reshape the topology
-- Visualize the connections between devices
-- Reset the layout to the default daisy chain configuration
+3. **Check application logs**:
+   ```bash
+   # For Docker:
+   docker logs hardware-timing-dashboard
+   
+   # For local run:
+   # Look at the terminal output where you launched the app
+   ```
 
-## Project Structure
+#### Syntax Errors in app.py
+If you encounter syntax errors like "name assigned before global declaration" or other syntax issues:
 
-```
-dashboard/
-├── app.py                 # Main dashboard application
-├── requirements.txt       # Python dependencies
-├── Dockerfile            # Docker configuration
-├── docker-compose.yml    # Docker Compose setup
-└── README.md            # This file
-```
+1. Check the app.py file for misplaced code after `app.run_server()` call
+2. Ensure all callback functions are properly structured with:
+   - `@app.callback` decorator
+   - Function definition with appropriate input/output parameters
+   - Proper indentation
 
-## Dependencies
+#### CSV File Loading Issues
+1. **Verify CSV format**:
+   - Comment lines starting with `//` or `#` are now supported
+   - Check that column names match expected format (Event, Time, Toggled, etc.)
+   - Verify data types (Time should be numeric, Toggled should be boolean)
 
-- **Dash**: Web application framework
-- **Plotly**: Interactive plotting library
-- **Seaborn**: Statistical data visualization
-- **Pandas**: Data manipulation and analysis
-- **NumPy**: Numerical computing
-- **Bootstrap**: UI components
+2. **Fix CSV file format issues**:
+   ```bash
+   # If needed, you can manually fix problematic CSV files:
+   sed 's/invalidFormat/correctFormat/g' problematic_file.csv > fixed_file.csv
+   ```
+
+#### Docker-related Issues
+1. **Rebuild Docker image after changes**:
+   ```bash
+   docker-compose build --no-cache
+   ```
+
+2. **Check Docker logs**:
+   ```bash
+   docker-compose logs
+   ```
+
+3. **Verify volume mounting**:
+   If data files aren't being accessed correctly, check that volumes are properly mounted in docker-compose.yml
+
+#### Virtual Environment Issues
+1. **Use the correct virtual environment**:
+   ```bash
+   # Use venv_new instead of venv
+   source venv_new/bin/activate
+   ```
+
+2. **Check installed packages**:
+   ```bash
+   pip list
+   ```
+
+3. **Reinstall dependencies if needed**:
+   ```bash
+   pip install -r requirements.txt --force-reinstall
+   ```
 
 ## Development
 
