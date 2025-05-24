@@ -4,9 +4,10 @@ services:
   dashboard:
     build: .
     ports:
-      - "8051:8050"
+      - "8050:8050"
     environment:
       - PYTHONUNBUFFERED=1
+      - DASH_PORT=8050
     volumes:
       - ./data:/app/data  # Optional: for external data files
     restart: unless-stopped

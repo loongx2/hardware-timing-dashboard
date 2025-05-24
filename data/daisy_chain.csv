@@ -87,3 +87,13 @@ UART_Receive,144000,True,Device_2,2,MSG_34567
 UART_Receive,144500,False,Device_2,2,MSG_34567
 UART_Receive,146500,True,Device_1,1,MSG_34567
 UART_Receive,147000,False,Device_1,1,MSG_34567
+Sync_Pulse,180000,True,Device_1,1,SYNC_3
+Sync_Pulse,180300,False,Device_1,1,SYNC_3
+Sync_Pulse,180075,True,Device_2,2,SYNC_3
+Sync_Pulse,180375,False,Device_2,2,SYNC_3
+Sync_Pulse,180150,True,Device_3,3,SYNC_3
+Sync_Pulse,180450,False,Device_3,3,SYNC_3
+Sync_Pulse,180225,True,Device_4,4,SYNC_3
+Sync_Pulse,180525,False,Device_4,4,SYNC_3
+Sync_Pulse,180300,True,Device_5,5,SYNC_3
+Sync_Pulse,180600,False,Device_5,5,SYNC_3

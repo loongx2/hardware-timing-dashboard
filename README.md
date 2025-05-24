@@ -10,15 +10,31 @@ A Python-based dashboard built with Dash, Plotly, and Seaborn for analyzing embe
 - 🔍 **Detailed Timing Analysis**: Statistical analysis with mean, std dev, min/max execution times
 - 📈 **Trend Analysis**: Track execution time patterns over multiple runs
 - 🎯 **Event Distribution**: Visualize frequency of different hardware events
+- 🔌 **Device Topology Analysis**: Visualize and analyze daisy-chained embedded devices
+- ⏱️ **Synchronicity Analysis**: Measure timing synchronization between multiple devices
+- 🔄 **Communication Time Analysis**: Track message propagation through device chains
 ## CSV Data Format
 
-The dashboard expects CSV files with the following columns:
+The dashboard supports two CSV formats:
+
+### Basic Format (Single Device):
 
 | Column   | Description                                    | Example    |
 |----------|------------------------------------------------|------------|
 | Event    | Name of the hardware event                     | GPIO_Init  |
 | Time     | Timestamp in nanoseconds                       | 1000       |
 | Toggled  | True when event starts, False when event ends | True/False |
+
+### Extended Format (Multiple Devices):
+
+| Column     | Description                                          | Example     |
+|------------|------------------------------------------------------|-------------|
+| Event      | Name of the hardware event                           | GPIO_Init   |
+| Time       | Timestamp in nanoseconds                             | 1000        |
+| Toggled    | True when event starts, False when event ends        | True/False  |
+| Device_ID  | Identifier for the specific device                   | Device_1    |
+| Position   | Position in the daisy chain (1=first, n=last)        | 1           |
+| Message_ID | Identifier for tracking messages between devices     | MSG_12345   |
 
 ### Sample CSV:
 ```csv
@@ -29,6 +45,17 @@ ADC_Read,2000,True
 ADC_Read,4000,False
 UART_Send,5000,True
 UART_Send,13000,False
+```
+
+### Sample Daisy Chain CSV:
+```csv
+Event,Time,Toggled,Device_ID,Position,Message_ID
+GPIO_Init,1000,True,Device_1,1,
+GPIO_Init,1500,False,Device_1,1,
+UART_Send,15000,True,Device_1,1,MSG_12345
+UART_Send,23000,False,Device_1,1,MSG_12345
+UART_Receive,25000,True,Device_2,2,MSG_12345
+UART_Receive,25500,False,Device_2,2,MSG_12345
 ```
 
 ## Quick Start
@@ -103,6 +130,58 @@ This will automatically:
    http://localhost:8050  # Default port
    http://localhost:8051  # If using alternative port
    ```
+
+## Getting Started
+
+The dashboard now comes with a simple, universal launcher that works on Windows, macOS, and Linux. The application always runs in Docker, ensuring consistent behavior across all platforms.
+
+### Prerequisites
+
+- Docker installed and running on your system
+- Python 3.6+ installed on your system
+
+### Running the Dashboard
+
+1. Clone or download this repository
+2. Run the dashboard using one of these methods:
+
+#### On Windows:
+```
+launch_dashboard.bat
+```
+
+#### On macOS/Linux:
+```
+./launch_dashboard.sh
+```
+
+This will:
+1. Build the Docker image if it doesn't exist
+2. Start a Docker container with the dashboard
+3. Make the dashboard accessible at http://localhost:8050
+4. Open your default web browser to this URL
+
+### No Command Line Options
+
+The launcher now uses a fixed configuration:
+- Always runs in Docker
+- Always uses port 8050
+- Always mounts the local data directory to the container
+
+### Stopping the Dashboard
+
+To stop the dashboard, run:
+```
+docker stop hardware-timing-dashboard
+```
+
+### Interactive Device Topology
+
+The dashboard now includes an interactive device topology visualization where you can:
+
+- Drag and drop device nodes to reshape the topology
+- Visualize the connections between devices
+- Reset the layout to the default daisy chain configuration
 
 ## Project Structure
 
