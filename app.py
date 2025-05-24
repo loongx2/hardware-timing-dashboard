@@ -428,9 +428,9 @@ def generate_sample_data():
 # sample_df = generate_sample_data()
 
 # Load sample timing data with proper handling of comment lines
-sample_file = 'data/sample_timing_data.csv'
+sample_file = 'data/sample_data.csv'
 if not os.path.exists(sample_file):
-    sample_file = 'sample_timing_data.csv'  # Fallback to current directory
+    sample_file = 'sample_data.csv'  # Fallback to current directory
 
 try:
     with open(sample_file, 'r') as f:
