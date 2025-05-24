@@ -28,6 +28,80 @@
 				],
 				"module": "uvicorn"
 			}
+		},
+		{
+			"label": "Docker: Build Simple",
+			"type": "shell",
+			"command": "docker",
+			"args": [
+				"build",
+				"-f",
+				"Dockerfile.simple",
+				"-t",
+				"dashboard:simple",
+				"."
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Docker: Run Simple",
+			"type": "shell",
+			"command": "docker",
+			"args": [
+				"run",
+				"-d",
+				"-p",
+				"8050:8050",
+				"--name",
+				"dashboard-simple",
+				"--rm",
+				"dashboard:simple"
+			],
+			"group": "test",
+			"dependsOn": "Docker: Build Simple",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Docker: Build and Run Simple",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"Docker: Build Simple",
+				"Docker: Run Simple"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Docker: Stop Simple",
+			"type": "shell",
+			"command": "docker",
+			"args": [
+				"stop",
+				"dashboard-simple"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
 		}
 	]
 }
