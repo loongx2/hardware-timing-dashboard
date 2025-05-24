@@ -428,14 +428,22 @@ def generate_sample_data():
 # sample_df = generate_sample_data()
 
 # Load sample timing data with proper handling of comment lines
-with open('sample_timing_data.csv', 'r') as f:
-    # Skip comment lines that start with // or #
-    cleaned_lines = [line for line in f if not line.strip().startswith('//') and not line.strip().startswith('#')]
-    cleaned_csv = '\n'.join(cleaned_lines)
+sample_file = 'data/sample_timing_data.csv'
+if not os.path.exists(sample_file):
+    sample_file = 'sample_timing_data.csv'  # Fallback to current directory
 
-# Parse the cleaned CSV content
-sample_df = pd.read_csv(io.StringIO(cleaned_csv))
-timing_data = sample_df  # Initialize with sample data
+try:
+    with open(sample_file, 'r') as f:
+        # Skip comment lines that start with // or #
+        cleaned_lines = [line for line in f if not line.strip().startswith('//') and not line.strip().startswith('#')]
+        cleaned_csv = '\n'.join(cleaned_lines)
+
+    # Parse the cleaned CSV content
+    sample_df = pd.read_csv(io.StringIO(cleaned_csv))
+    timing_data = sample_df  # Initialize with sample data
+except FileNotFoundError:
+    print(f"Warning: Sample data file not found at {sample_file}")
+    timing_data = None
 
 # Define the layout
 app.layout = dbc.Container([
@@ -1888,3 +1896,8 @@ def save_export_topology(save_clicks, export_clicks, topology_data):
         return dbc.Alert("Topology exported to downloads", color="info", dismissable=True)
     
     return ""
+
+# Run the app
+if __name__ == '__main__':
+    port = int(os.environ.get('DASH_PORT', 8050))
+    app.run(debug=True, host='0.0.0.0', port=port)
