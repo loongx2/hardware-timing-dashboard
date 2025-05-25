@@ -520,7 +520,7 @@ app.layout = dbc.Container([
                             )
                         ], width=3),
                         dbc.Col([
-                            html.Label("Connection Editor:", className="fw-bold mb-2"),
+                            html.Label("Connection Editor:", className="fw-bold mb-2 d-block"),
                             dbc.ButtonGroup([
                                 dbc.Button("🔗 Add Connection", id="add-connection-btn", 
                                           color="success", size="sm", className="me-1"),
@@ -528,19 +528,19 @@ app.layout = dbc.Container([
                                           color="danger", size="sm", className="me-1"),
                                 dbc.Button("🔄 Reset Layout", id="reset-layout-btn", 
                                           color="warning", size="sm")
-                            ], className="mb-2")
+                            ], className="mb-2 mt-1")
                         ], width=4),
                         dbc.Col([
-                            html.Label("Topology Actions:", className="fw-bold mb-2"),
+                            html.Label("Topology Actions:", className="fw-bold mb-2 d-block"),
                             dbc.ButtonGroup([
                                 dbc.Button("💾 Save Topology", id="save-topology-btn", 
                                           color="primary", size="sm", className="me-1"),
                                 dbc.Button("📤 Export Layout", id="export-topology-btn", 
                                           color="info", size="sm")
-                            ], className="mb-2")
+                            ], className="mb-2 mt-1")
                         ], width=3),
                         dbc.Col([
-                            html.Label("Layout Options:", className="fw-bold mb-2"),
+                            html.Label("Layout Options:", className="fw-bold mb-2 d-block"),
                             dbc.Checklist(
                                 id="layout-options",
                                 options=[
@@ -550,7 +550,7 @@ app.layout = dbc.Container([
                                 ],
                                 value=["labels", "connections", "dragging"],
                                 inline=True,
-                                className="small"
+                                className="small mt-1"
                             )
                         ], width=2)
                     ], className="mb-3"),
@@ -1093,7 +1093,7 @@ def update_detailed_timing(contents):
                 all_devices.extend([device] * len(times_ns))
         
         df_box = pd.DataFrame({
-            'Execution_Time_ns': all_times,  # Changed from Execution_Time_us
+            'Execution_Time_ns': all_times,  # Changed from Execution_Time_ns
             'Event': all_events,
             'Device': all_devices
         })
@@ -1101,7 +1101,7 @@ def update_detailed_timing(contents):
         fig = px.box(
             df_box,
             x='Event',
-            y='Execution_Time_ns',  # Changed from Execution_Time_us
+            y='Execution_Time_ns',  # Changed from Execution_Time_ns
             color='Device',
             title='Detailed Execution Time Analysis by Device',
             labels={'Execution_Time_ns': 'Execution Time (ns)'}  # Changed from μs to ns
@@ -1113,14 +1113,14 @@ def update_detailed_timing(contents):
             all_events.extend([event] * len(times_ns))
         
         df_box = pd.DataFrame({
-            'Execution_Time_ns': all_times,  # Changed from Execution_Time_us
+            'Execution_Time_ns': all_times,  # Changed from Execution_Time_ns
             'Event': all_events
         })
         
         fig = px.box(
             df_box,
             x='Event',
-            y='Execution_Time_ns',  # Changed from Execution_Time_us
+            y='Execution_Time_ns',  # Changed from Execution_Time_ns
             title='Detailed Execution Time Analysis (Box Plot)',
             labels={'Execution_Time_ns': 'Execution Time (ns)'}  # Changed from μs to ns
         )
@@ -1238,23 +1238,7 @@ def update_device_topology(contents):
                 bgcolor='rgba(255, 255, 255, 0.7)',
                 color='rgba(44, 62, 80, 0.8)',
                 activecolor='rgba(44, 62, 80, 1)'
-            ),
-            updatemenus=[
-                dict(
-                    type='buttons',
-                    showactive=False,
-                    buttons=[
-                        dict(
-                            label='Reset Layout',
-                            method='relayout',
-                            args=[{'xaxis.range': [min(sorted_positions)-0.5, max(sorted_positions)+0.5], 
-                                   'yaxis.range': [0.5, 1.5]}]
-                        )
-                    ],
-                    x=0.05,
-                    y=1.15,
-                )
-            ]
+            )
         )
         
         # Create a summary of device stats
@@ -1387,7 +1371,7 @@ def update_device_comparison(selected_devices):
         if device in device_stats:
             event_count = sum(stat['count'] for stat in device_stats[device].values())
             avg_times = [stat['mean_ns'] for stat in device_stats[device].values()]
-            avg_exec_time = f"{np.mean(avg_times)/1000:.1f} μs"
+            avg_exec_time = f"{np.mean(avg_times):.1f} ns"
             
             summary.append(html.P(f"{device}: {event_count} events, Avg Time: {avg_exec_time}"))
     
@@ -1531,7 +1515,7 @@ def update_communication_analysis(contents):
         'Message_ID': message_ids,
         'Source': source_devices,
         'Destination': destination_devices,
-        'Time_us': comm_times,
+        'Time_ns': comm_times,
         'Hops': hop_counts
     })
     
@@ -1539,11 +1523,11 @@ def update_communication_analysis(contents):
     fig = px.scatter(
         df_comm,
         x='Hops',
-        y='Time_us',
+        y='Time_ns',
         color='Source',
         hover_data=['Destination', 'Message_ID'],
         title='Communication Time vs. Distance (Hops)',
-        labels={'Time_us': 'Communication Time (μs)', 'Hops': 'Number of Hops'},
+        labels={'Time_ns': 'Communication Time (ns)', 'Hops': 'Number of Hops'},
         trendline='ols'  # Add trendline
     )
     
@@ -1553,11 +1537,11 @@ def update_communication_analysis(contents):
     )
     
     # Calculate average communication time per hop
-    avg_time_per_hop = df_comm['Time_us'].sum() / df_comm['Hops'].sum() if df_comm['Hops'].sum() > 0 else 0
+    avg_time_per_hop = df_comm['Time_ns'].sum() / df_comm['Hops'].sum() if df_comm['Hops'].sum() > 0 else 0
     
     # Calculate average communication times between each device pair
     device_pairs = df_comm.groupby(['Source', 'Destination']).agg({
-        'Time_us': 'mean',
+        'Time_ns': 'mean',
         'Hops': 'mean'
     }).reset_index()
     
@@ -1565,7 +1549,7 @@ def update_communication_analysis(contents):
     pair_stats = []
     for _, row in device_pairs.iterrows():
         pair_stats.append(
-            html.P(f"{row['Source']} → {row['Destination']} ({row['Hops']:.0f} hops): {row['Time_us']:.2f} ns")  # Changed from μs to ns
+            html.P(f"{row['Source']} → {row['Destination']} ({row['Hops']:.0f} hops): {row['Time_ns']:.2f} ns")  # Changed from μs to ns
         )
     
     summary = [
